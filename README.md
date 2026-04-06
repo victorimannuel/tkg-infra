@@ -61,7 +61,10 @@ rclone config
 # Setelah selesai:
 cat ~/.config/rclone/rclone.conf
 ```
-Copy isi file tersebut ke `ansible/roles/backup/files/rclone.conf`
+Copy isi file tersebut ke `ansible/roles/backup/files/rclone.conf`.
+
+`ansible/roles/backup/files/rclone.conf` sengaja di-ignore dari git untuk mencegah token ter-push ke GitHub.
+Contoh format ada di `ansible/roles/backup/files/rclone.conf.example`.
 
 ### 4. Siapkan Addons
 

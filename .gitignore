@@ -1,6 +1,15 @@
 # Ansible
 .vault_pass
 *.retry
+ansible/roles/backup/files/rclone.conf
+
+# Local secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
 
 # IDE
 .idea/
