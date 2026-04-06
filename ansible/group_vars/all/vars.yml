@@ -1,0 +1,28 @@
+---
+# =====================================================
+# Global Variables — Edit these before your first run!
+# =====================================================
+
+# --- Server ---
+deploy_user: odoo
+odoo_base_dir: /opt/odoo
+
+# --- Domain & SSL ---
+odoo_domain: "odoo.tarakencanagroup.com"
+website_domain: "tarakencanagroup.com"
+website_base_dir: "/var/www/tkg-website"
+ssl_email: "ops@imannuelvictor.com"
+
+# --- Odoo ---
+odoo_admin_passwd: "{{ vault_odoo_admin_passwd }}"
+odoo_workers: 4
+
+# --- PostgreSQL ---
+postgres_db: db_tkg_production
+postgres_user: odoo
+postgres_password: "{{ vault_postgres_password }}"
+
+# --- Backup ---
+backup_gdrive_folder: "OdooTKG-Backups"   # folder name in Google Drive
+backup_retain_daily: 7                     # keep last 7 daily backups
+backup_retain_weekly: 4                    # keep last 4 weekly backups

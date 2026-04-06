@@ -1,0 +1,56 @@
+---
+# Role: backup — Setup automated daily backup to Google Drive via rclone
+
+- name: Install rclone
+  ansible.builtin.shell: |
+    curl https://rclone.org/install.sh | sudo bash
+  args:
+    creates: /usr/bin/rclone
+
+- name: Create rclone config directory for root
+  ansible.builtin.file:
+    path: /root/.config/rclone
+    state: directory
+    mode: "0700"
+
+- name: Copy rclone config (gdrive remote)
+  ansible.builtin.copy:
+    src: rclone.conf
+    dest: /root/.config/rclone/rclone.conf
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Template backup script
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: /opt/odoo/backup.sh
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Create Google Drive backup base folders
+  ansible.builtin.command: >
+    rclone mkdir "gdrive:{{ backup_gdrive_folder }}/daily"
+  changed_when: false
+
+- name: Create weekly backup folder on Google Drive
+  ansible.builtin.command: >
+    rclone mkdir "gdrive:{{ backup_gdrive_folder }}/weekly"
+  changed_when: false
+
+- name: Setup daily backup cron (2 AM Jakarta time = UTC+7)
+  ansible.builtin.cron:
+    name: odoo-daily-backup
+    hour: "19"    # 19:00 UTC = 02:00 WIB
+    minute: "0"
+    job: "/opt/odoo/backup.sh >> /var/log/odoo/backup.log 2>&1"
+    user: root
+
+- name: Create backup log file
+  ansible.builtin.file:
+    path: /var/log/odoo/backup.log
+    state: touch
+    mode: "0644"
+    owner: root
+    group: root

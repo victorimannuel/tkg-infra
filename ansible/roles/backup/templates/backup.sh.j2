@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Odoo TKG — Backup to Google Drive via rclone
+# Runs via cron daily. Retains {{ backup_retain_daily }} daily + {{ backup_retain_weekly }} weekly backups.
+
+set -euo pipefail
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+DAY_OF_WEEK=$(date +%u)   # 1=Monday ... 7=Sunday
+BACKUP_DIR="/tmp/odoo_backup_${TIMESTAMP}"
+GDRIVE_FOLDER="{{ backup_gdrive_folder }}"
+DB_NAME="{{ postgres_db }}"
+CONTAINER_POSTGRES="odoo_postgres"
+ODOO_DATA_VOL="odoo_odoo-data"
+
+echo "[$(date)] Starting Odoo backup..."
+mkdir -p "${BACKUP_DIR}"
+
+# 1. Dump PostgreSQL database
+echo "[$(date)] Dumping database: ${DB_NAME}"
+docker exec "${CONTAINER_POSTGRES}" \
+    pg_dump -U {{ postgres_user }} "${DB_NAME}" \
+    | gzip > "${BACKUP_DIR}/db_${DB_NAME}_${TIMESTAMP}.sql.gz"
+
+# 2. Backup Odoo filestore (from Docker volume)
+echo "[$(date)] Backing up filestore..."
+docker run --rm \
+    -v "${ODOO_DATA_VOL}:/data:ro" \
+    -v "${BACKUP_DIR}:/backup" \
+    busybox tar czf "/backup/filestore_${TIMESTAMP}.tar.gz" -C /data .
+
+# 3. Upload daily backup to Google Drive
+DAILY_DEST="${GDRIVE_FOLDER}/daily/${TIMESTAMP}"
+echo "[$(date)] Uploading to Google Drive: ${DAILY_DEST}"
+rclone copy "${BACKUP_DIR}/" "gdrive:${DAILY_DEST}/" --log-level INFO
+
+# 4. If Sunday, also copy to weekly folder
+if [ "${DAY_OF_WEEK}" -eq 7 ]; then
+    WEEK=$(date +%Y-W%V)
+    echo "[$(date)] Sunday — copying to weekly: ${GDRIVE_FOLDER}/weekly/${WEEK}"
+    rclone copy "${BACKUP_DIR}/" "gdrive:${GDRIVE_FOLDER}/weekly/${WEEK}/" --log-level INFO
+fi
+
+# 5. Prune old daily backups (keep last {{ backup_retain_daily }})
+echo "[$(date)] Pruning old daily backups (keep {{ backup_retain_daily }})..."
+rclone lsd "gdrive:${GDRIVE_FOLDER}/daily/" \
+    | sort \
+    | head -n -{{ backup_retain_daily }} \
+    | awk '{print $NF}' \
+    | while read -r dir; do
+        echo "  Deleting old daily: ${dir}"
+        rclone purge "gdrive:${GDRIVE_FOLDER}/daily/${dir}"
+    done
+
+# 6. Prune old weekly backups (keep last {{ backup_retain_weekly }})
+echo "[$(date)] Pruning old weekly backups (keep {{ backup_retain_weekly }})..."
+rclone lsd "gdrive:${GDRIVE_FOLDER}/weekly/" \
+    | sort \
+    | head -n -{{ backup_retain_weekly }} \
+    | awk '{print $NF}' \
+    | while read -r dir; do
+        echo "  Deleting old weekly: ${dir}"
+        rclone purge "gdrive:${GDRIVE_FOLDER}/weekly/${dir}"
+    done
+
+# 7. Cleanup temp files
+rm -rf "${BACKUP_DIR}"
+echo "[$(date)] Backup completed successfully!"

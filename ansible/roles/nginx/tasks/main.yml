@@ -1,0 +1,94 @@
+---
+# Role: nginx — Install Nginx and configure as reverse proxy + SSL
+
+- name: Install Nginx and Certbot
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: true
+
+- name: Remove default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Check if Odoo SSL certificate already exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ odoo_domain }}/fullchain.pem"
+  register: odoo_ssl_cert
+
+- name: Check if Website SSL certificate already exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ website_domain }}/fullchain.pem"
+  register: website_ssl_cert
+
+- name: Create certbot webroot directory
+  ansible.builtin.file:
+    path: /var/www/certbot
+    state: directory
+    mode: "0755"
+
+- name: Deploy Nginx site configs
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/nginx/sites-available/{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { src: 'odoo.conf.j2', dest: 'odoo.conf', ssl_enabled: "{{ odoo_ssl_cert.stat.exists }}" }
+    - { src: 'website.conf.j2', dest: 'website.conf', ssl_enabled: "{{ website_ssl_cert.stat.exists }}" }
+
+- name: Enable Nginx sites
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item }}"
+    dest: "/etc/nginx/sites-enabled/{{ item }}"
+    state: link
+  loop:
+    - odoo.conf
+    - website.conf
+
+- name: Reload Nginx for Bootstrap
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+  when: not odoo_ssl_cert.stat.exists or not website_ssl_cert.stat.exists
+
+- name: Obtain Let's Encrypt SSL certificates
+  ansible.builtin.command: >
+    certbot certonly
+    --nginx
+    -d {{ item }}
+    --email {{ ssl_email }}
+    --agree-tos
+    --non-interactive
+  loop:
+    - "{{ odoo_domain }}"
+    - "{{ website_domain }}"
+  register: certbot_output
+  ignore_errors: true
+
+- name: Re-deploy Full Nginx site configs (with SSL)
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/nginx/sites-available/{{ item.dest }}"
+    mode: "0644"
+  vars:
+    ssl_enabled: true
+  loop:
+    - { src: 'odoo.conf.j2', dest: 'odoo.conf' }
+    - { src: 'website.conf.j2', dest: 'website.conf' }
+
+- name: Enable and restart Nginx (Final)
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: restarted
+
+- name: Setup Certbot auto-renewal cron
+  ansible.builtin.cron:
+    name: certbot-renew
+    special_time: daily
+    job: "certbot renew --quiet --deploy-hook 'systemctl reload nginx'"
+    user: root

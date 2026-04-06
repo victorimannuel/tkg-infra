@@ -1,0 +1,72 @@
+---
+# Role: common — Base server hardening and utilities
+
+- name: Update and upgrade apt packages
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: dist
+    cache_valid_time: 3600
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - htop
+      - unzip
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - ufw
+      - fail2ban
+      - cron
+      - logrotate
+      - acl
+    state: present
+
+- name: Set timezone to Asia/Jakarta
+  community.general.timezone:
+    name: Asia/Jakarta
+
+- name: Create deploy user
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Set UFW default policies
+  community.general.ufw:
+    default: deny
+    direction: "{{ item }}"
+  loop:
+    - incoming
+    - outgoing
+
+- name: Allow outgoing traffic
+  community.general.ufw:
+    rule: allow
+    direction: out
+
+- name: Allow SSH
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Allow HTTP
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Allow HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled

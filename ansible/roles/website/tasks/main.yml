@@ -1,0 +1,18 @@
+---
+# Role: website — Deploy static React build
+
+- name: Create website base directory
+  ansible.builtin.file:
+    path: "{{ website_base_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+
+- name: Synchronize website build (dist) to server
+  ansible.posix.synchronize:
+    src: "../../tkg-website/dist/"
+    dest: "{{ website_base_dir }}/"
+    delete: true
+    recursive: true
+  tags: [website, deploy]

@@ -1,0 +1,11 @@
+# Ansible
+.vault_pass
+*.retry
+
+# IDE
+.idea/
+.vscode/
+
+# Ignore local addons from the symlink script
+addons/
+external-addons/

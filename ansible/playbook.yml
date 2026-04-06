@@ -1,0 +1,19 @@
+---
+# Main Ansible playbook for Odoo TKG deployment
+
+- name: Provision and Deploy TKG Corporate Ecosystem
+  hosts: tkg_servers
+  become: true
+  roles:
+    - role: common
+      tags: [common, base]
+    - role: docker
+      tags: [docker]
+    - role: odoo
+      tags: [odoo, deploy]
+    - role: website
+      tags: [website, deploy]
+    - role: nginx
+      tags: [nginx, ssl]
+#    - role: backup
+#      tags: [backup]

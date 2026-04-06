@@ -1,0 +1,100 @@
+---
+# Role: odoo — Deploy Odoo with Docker Compose
+
+- name: Create Odoo base directory structure
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+  loop:
+    - "{{ odoo_base_dir }}"
+    - "{{ odoo_base_dir }}/custom-addons"
+    - "{{ odoo_base_dir }}/external-addons"
+    - /var/log/odoo
+
+- name: Set log directory permissions
+  ansible.builtin.file:
+    path: /var/log/odoo
+    state: directory
+    owner: "100"   # odoo uid inside container
+    group: "101"   # odoo gid inside container
+    mode: "0755"
+
+- name: Sync custom addons
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../addons/"
+    dest: "{{ odoo_base_dir }}/custom-addons/"
+    delete: true
+    rsync_opts:
+      - "--copy-links"
+      - "--exclude=__pycache__"
+      - "--exclude=*.pyc"
+
+- name: Sync external addons
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../external-addons/"
+    dest: "{{ odoo_base_dir }}/external-addons/"
+    delete: true
+    rsync_opts:
+      - "--copy-links"
+      - "--exclude=__pycache__"
+      - "--exclude=*.pyc"
+      - "--exclude=*.zip"
+      - "--exclude=archive/"
+      - "--exclude=temp/"
+
+- name: Copy Dockerfile
+  ansible.builtin.copy:
+    src: Dockerfile
+    dest: "{{ odoo_base_dir }}/Dockerfile"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ odoo_base_dir }}/docker-compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+
+- name: Template odoo.conf
+  ansible.builtin.template:
+    src: odoo.conf.j2
+    dest: "{{ odoo_base_dir }}/odoo.conf"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+
+- name: Build Odoo Docker image
+  community.docker.docker_compose_v2:
+    project_src: "{{ odoo_base_dir }}"
+    build: always
+    state: present
+  become_user: "{{ deploy_user }}"
+
+- name: Start Odoo services
+  community.docker.docker_compose_v2:
+    project_src: "{{ odoo_base_dir }}"
+    state: present
+  become_user: "{{ deploy_user }}"
+  register: odoo_compose_result
+
+# - name: Initialize Odoo database (Initial run only)
+#   ansible.builtin.command:
+#     cmd: "docker compose run --rm odoo odoo -i base --stop-after-init"
+#     chdir: "{{ odoo_base_dir }}"
+#   become_user: "{{ deploy_user }}"
+#   tags: [never, init-db]
+
+# - name: Wait for Odoo to be ready
+#   ansible.builtin.uri:
+#     url: "http://127.0.0.1:8069/web/login"
+#     status_code: 200
+#   register: odoo_health
+#   until: odoo_health.status == 200
+#   retries: 30
+#   delay: 10
