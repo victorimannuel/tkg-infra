@@ -34,6 +34,7 @@ prepare-addons:
 	@ln -sfn ../../tkg-odoo/addons/bvc_invoice         addons/bvc_invoice
 	@ln -sfn ../../tkg-odoo/addons/sale_referrer_credit addons/sale_referrer_credit
 	@ln -sfn ../../tkg-odoo/addons/tara_gym_gymmaster   addons/tara_gym_gymmaster
+	@ln -sfn ../../tkg-odoo/addons/pos_cart_sale_order   addons/pos_cart_sale_order
 	@for addon in ../tkg-odoo/external-addons/*; do \
 		if [ -d "$$addon" ]; then \
 			ln -sfn "../../tkg-odoo/external-addons/$$(basename "$$addon")" "external-addons/$$(basename "$$addon")"; \
