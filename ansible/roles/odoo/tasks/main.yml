@@ -70,10 +70,9 @@
     mode: "0644"
 
 - name: Build Odoo Docker image
-  community.docker.docker_compose_v2:
-    project_src: "{{ odoo_base_dir }}"
-    build: always
-    state: present
+  ansible.builtin.command:
+    cmd: "docker compose build"
+    chdir: "{{ odoo_base_dir }}"
   become_user: "{{ deploy_user }}"
 
 - name: Start Odoo services
