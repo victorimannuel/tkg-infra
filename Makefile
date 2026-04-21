@@ -31,18 +31,30 @@ help:
 prepare-addons:
 	@echo "Symlinking addons..."
 	@mkdir -p addons external-addons
+	@# Remove stale symlinks for addons that were deleted from source.
+	@find addons -mindepth 1 -maxdepth 1 -type l | while read -r link; do \
+		name=$$(basename "$$link"); \
+		if [ ! -d "../tkg-odoo/addons/$$name" ]; then \
+			rm -f "$$link"; \
+		fi; \
+	done
+	@find external-addons -mindepth 1 -maxdepth 1 -type l | while read -r link; do \
+		name=$$(basename "$$link"); \
+		if [ ! -d "../tkg-odoo/external-addons/$$name" ]; then \
+			rm -f "$$link"; \
+		fi; \
+	done
 	@for addon in ../tkg-odoo/addons/*; do \
 		if [ -d "$$addon" ]; then \
 			ln -sfn "../../tkg-odoo/addons/$$(basename "$$addon")" "addons/$$(basename "$$addon")"; \
-		fi \
+		fi; \
 	done
 	@for addon in ../tkg-odoo/external-addons/*; do \
 		if [ -d "$$addon" ]; then \
 			ln -sfn "../../tkg-odoo/external-addons/$$(basename "$$addon")" "external-addons/$$(basename "$$addon")"; \
-		fi \
+		fi; \
 	done
 	@echo "Done! Check addons/ and external-addons/ directories."
-
 deploy:
 	cd $(ANSIBLE_DIR) && ansible-playbook -i inventory/hosts.yml playbook.yml $(VAULT_FLAGS)
 
