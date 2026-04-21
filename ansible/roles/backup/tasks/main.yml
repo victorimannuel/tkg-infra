@@ -21,6 +21,17 @@
     group: root
     mode: "0600"
 
+- name: Validate gdrive remote exists in rclone config
+  ansible.builtin.command: rclone listremotes
+  register: rclone_remotes
+  changed_when: false
+
+- name: Ensure gdrive remote is configured
+  ansible.builtin.assert:
+    that:
+      - "'gdrive:' in rclone_remotes.stdout_lines"
+    fail_msg: "rclone remote 'gdrive:' not found in /root/.config/rclone/rclone.conf"
+
 - name: Template backup script
   ansible.builtin.template:
     src: backup.sh.j2
@@ -28,6 +39,28 @@
     owner: root
     group: root
     mode: "0750"
+
+- name: Get available Docker container names
+  ansible.builtin.command: docker ps -a --format "{{ '{{.Names}}' }}"
+  register: docker_container_names
+  changed_when: false
+
+- name: Ensure configured postgres container exists
+  ansible.builtin.assert:
+    that:
+      - "backup_postgres_container in docker_container_names.stdout_lines"
+    fail_msg: "Configured postgres container '{{ backup_postgres_container }}' not found."
+
+- name: Get available Docker volume names
+  ansible.builtin.command: docker volume ls --format "{{ '{{.Name}}' }}"
+  register: docker_volume_names
+  changed_when: false
+
+- name: Ensure configured Odoo data volume exists
+  ansible.builtin.assert:
+    that:
+      - "backup_odoo_data_volume in docker_volume_names.stdout_lines"
+    fail_msg: "Configured Odoo data volume '{{ backup_odoo_data_volume }}' not found."
 
 - name: Create Google Drive backup base folders
   ansible.builtin.command: >

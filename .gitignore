@@ -19,3 +19,5 @@ ansible/roles/backup/files/rclone.conf
 # Ignore local addons from the symlink script
 addons/
 external-addons/
+
+rclone.conf

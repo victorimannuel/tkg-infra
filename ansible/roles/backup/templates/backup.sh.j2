@@ -9,8 +9,8 @@ DAY_OF_WEEK=$(date +%u)   # 1=Monday ... 7=Sunday
 BACKUP_DIR="/tmp/odoo_backup_${TIMESTAMP}"
 GDRIVE_FOLDER="{{ backup_gdrive_folder }}"
 DB_NAME="{{ postgres_db }}"
-CONTAINER_POSTGRES="odoo_postgres"
-ODOO_DATA_VOL="odoo_odoo-data"
+CONTAINER_POSTGRES="{{ backup_postgres_container }}"
+ODOO_DATA_VOL="{{ backup_odoo_data_volume }}"
 
 echo "[$(date)] Starting Odoo backup..."
 mkdir -p "${BACKUP_DIR}"

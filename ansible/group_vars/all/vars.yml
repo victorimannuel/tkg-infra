@@ -26,3 +26,5 @@ postgres_password: "{{ vault_postgres_password }}"
 backup_gdrive_folder: "OdooTKG-Backups"   # folder name in Google Drive
 backup_retain_daily: 7                     # keep last 7 daily backups
 backup_retain_weekly: 4                    # keep last 4 weekly backups
+backup_postgres_container: "odoo_postgres"
+backup_odoo_data_volume: "odoo_odoo-data"

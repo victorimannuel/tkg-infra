@@ -15,5 +15,5 @@
       tags: [website, deploy]
     - role: nginx
       tags: [nginx, ssl]
-#    - role: backup
-#      tags: [backup]
+    - role: backup
+      tags: [backup]

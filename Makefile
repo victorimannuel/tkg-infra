@@ -10,7 +10,7 @@ else
 VAULT_FLAGS = --ask-vault-pass
 endif
 
-.PHONY: help prepare-addons deploy deploy-odoo deploy-nginx init-db dry-run ping
+.PHONY: help prepare-addons deploy deploy-odoo deploy-website deploy-nginx deploy-backup init-db dry-run ping
 
 help:
 	@echo ""
@@ -21,6 +21,7 @@ help:
 	@echo "  make deploy-odoo     — Deploy/update Odoo & addons only"
 	@echo "  make deploy-website  — Deploy/update Static Website only"
 	@echo "  make deploy-nginx    — Deploy/update Nginx & SSL only"
+	@echo "  make deploy-backup   — Deploy/update backup role only"
 	@echo "  make init-db         — Initialize Odoo database (first run only)"
 	@echo "  make dry-run         — Preview changes (no apply)"
 	@echo "  make ping            — Test Ansible connectivity"
@@ -53,6 +54,9 @@ deploy-website:
 
 deploy-nginx:
 	cd $(ANSIBLE_DIR) && ansible-playbook -i inventory/hosts.yml playbook.yml --tags nginx,ssl $(VAULT_FLAGS)
+
+deploy-backup:
+	cd $(ANSIBLE_DIR) && ansible-playbook -i inventory/hosts.yml playbook.yml --tags backup $(VAULT_FLAGS)
 
 init-db:
 	cd $(ANSIBLE_DIR) && ansible-playbook -i inventory/hosts.yml playbook.yml --tags init-db $(VAULT_FLAGS)
