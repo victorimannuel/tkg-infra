@@ -8,6 +8,7 @@ admin_passwd = {{ odoo_admin_passwd }}
 db_host = postgres
 db_port = 5432
 db_name = {{ postgres_db }}
+dbfilter = ^{{ postgres_db }}$
 db_user = {{ postgres_user }}
 db_password = {{ postgres_password }}
 
