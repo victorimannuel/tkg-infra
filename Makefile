@@ -50,8 +50,21 @@ prepare-addons:
 		fi; \
 	done
 	@for addon in ../tkg-odoo/external-addons/*; do \
-		if [ -d "$$addon" ]; then \
+		if [ -d "$$addon" ] && [ "$$(basename "$$addon")" != "oca" ] && [ "$$(basename "$$addon")" != "OCA" ]; then \
 			ln -sfn "../../tkg-odoo/external-addons/$$(basename "$$addon")" "external-addons/$$(basename "$$addon")"; \
+		fi; \
+	done
+	@# Keep root clean: OCA repos are linked individually below, so no need for external-addons/oca link.
+	@rm -f external-addons/oca external-addons/OCA
+	@# OCA repos are commonly nested as external-addons/oca/<repo>/<module>.
+	@# Link each repo under external-addons root.
+	@for dir in oca OCA; do \
+		if [ -d "../tkg-odoo/external-addons/$$dir" ]; then \
+			for repo in ../tkg-odoo/external-addons/$$dir/*; do \
+				if [ -d "$$repo" ]; then \
+					ln -sfn "../../tkg-odoo/external-addons/$$dir/$$(basename "$$repo")" "external-addons/$$(basename "$$repo")"; \
+				fi; \
+			done; \
 		fi; \
 	done
 	@echo "Done! Check addons/ and external-addons/ directories."

@@ -1,6 +1,17 @@
 [options]
 addons_path = /mnt/extra-addons,
               /mnt/external-addons,
+              /mnt/external-addons/account-analytic,
+              /mnt/external-addons/account-budgeting,
+              /mnt/external-addons/account-financial-reporting,
+              /mnt/external-addons/account-financial-tools,
+              /mnt/external-addons/account-invoicing,
+              /mnt/external-addons/account-payment,
+              /mnt/external-addons/account-reconcile,
+              /mnt/external-addons/reporting-engine,
+              /mnt/external-addons/server-ux,
+              /mnt/external-addons/mis-builder,
+              /mnt/external-addons/triton-odoo,
               /mnt/custom-addons
 
 admin_passwd = {{ odoo_admin_passwd }}
@@ -22,7 +33,6 @@ max_cron_threads = 2
 
 ; Security - disable DB manager from public
 list_db = False
-# list_db = True
 
 ; Performance tuning
 limit_memory_hard = 2684354560
